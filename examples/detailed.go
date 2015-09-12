@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/go-martini/martini"
 	"github.com/jinzhu/gorm"
 	_ "github.com/mattn/go-sqlite3"
 
@@ -135,6 +136,13 @@ func main() {
 
 	// We want people to only see their own widgets, unless they are admin.
 	a.AddDefaultRoutes(&PrivateWidget{}, onlyOwnUnlessAdmin)
+
+	// We are going to make the widget list available to view by user at
+	// /api/user/:user_id/private_widgets
+	a.AddIndexRoute(&PrivateWidget{},
+		api.RouteOptions{
+			Prefix: "/user/:user_id",
+			Query:  func(req *api.Request, params martini.Params) { req.DB = req.DB.Where("user_id = ?", params["user_id"]) }})
 
 	// Run the server.
 	a.Martini().RunOnAddr("127.0.0.1:3000")

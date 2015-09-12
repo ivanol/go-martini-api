@@ -1,6 +1,6 @@
 # go-martini-api
-This package uses Martini (https://github.com/go-martini/martini), gorm
-(https://github.com/jinzhu/gorm) and Golang to allow building RESTful
+This package uses [Martini](https://github.com/go-martini/martini),
+[gorm] (https://github.com/jinzhu/gorm) and Golang to allow building RESTful
 APIs with the minimum of time and boilerplate code.
 
 ## Simple Example
@@ -99,5 +99,6 @@ will be bound to all subsequent handlers as LoginModel.
 
 ## Detailed Example
 
-A detailed example is in the examples folder. Run it with `go run auth.go`, and then visit
+A [detailed example](https://github.com/ivanol/go-martini-api/blob/master/examples/detailed.go)
+is in the examples folder. Run it with `go run detailed.go`, and then visit
 http://localhost:3000/ to access it.
