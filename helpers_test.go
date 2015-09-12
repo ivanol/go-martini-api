@@ -43,7 +43,12 @@ type WidgetClone struct {
 	Name string `json:"name"`
 }
 
-func createAndSeedDb() *gorm.DB {
+var test_db *gorm.DB
+
+func getTestDb() *gorm.DB {
+	if test_db != nil {
+		return test_db
+	}
 	db, err := gorm.Open("sqlite3", "./api-test.db")
 
 	if err != nil {
@@ -66,7 +71,8 @@ func createAndSeedDb() *gorm.DB {
 	db.Create(&Widget{ID: 2, Name: "Widget 2"})
 	db.Create(&Widget{ID: 3, Name: "Widget 3"})
 
-	return &db
+	test_db = &db
+	return test_db
 }
 
 // getSilentMartini returns a ClassicMartini with logging disabled.
@@ -100,7 +106,7 @@ func getTestApi() API {
 		log.SetLevel(log.DebugLevel)
 	}
 
-	db := createAndSeedDb()
+	db := getTestDb()
 	a := New(Options{JwtKey: "RandomString", Db: db, Martini: getSilentMartini()})
 
 	a.AddDefaultRoutes(&PrivateWidget{}, RouteOptions{Authenticate: true})

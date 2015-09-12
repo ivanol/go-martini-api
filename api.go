@@ -89,6 +89,9 @@ func New(options Options) API {
 	if m == nil {
 		m = martini.Classic()
 	}
+	if options.Db == nil {
+		panic("Can't start API server without a database. Please pass a gorm DB object  (eg. api.New(api.Options{Db: XXX}) )")
+	}
 	api := apiServer{db: options.Db, martini: m, options: &options}
 
 	api.martini.Use(func(c martini.Context) {

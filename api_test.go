@@ -9,16 +9,22 @@ import (
 
 // Check a martini is created if not passed.
 func TestNilMartini(t *testing.T) {
-	api := New(Options{})
+	api := New(Options{Db: getTestDb()})
 	if api.Martini() == nil {
 		t.Errorf("API doesn't create it's own Martini when not passed one")
 	}
 }
 
+// Check we panic when started with a nil DB
+func TestNilDb(t *testing.T) {
+	defer ensurePanic(t, "API started without a DB")
+	_ = New(Options{})
+}
+
 // Check we don't allow authorization to be set up without initialising a
 // secret key.
 func TestEmptyJWTKey(t *testing.T) {
-	api := New(Options{})
+	api := New(Options{Db: getTestDb()})
 	defer ensurePanic(t, "API allowed setting up authorization without a secret key")
 	api.SetAuth(&User{}, "/login")
 }

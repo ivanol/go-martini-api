@@ -1,5 +1,5 @@
 *.swp
 config/secret/*
 webserver
-api-test.db
+*.db
 c.out

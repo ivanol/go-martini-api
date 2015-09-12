@@ -1,0 +1,88 @@
+<html ng-app="goMartiniApiTest">
+<script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.3.14/angular.min.js"></script>
+<style>
+  pre {
+    white-space: pre-wrap;       /* CSS 3 */
+    white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
+    white-space: -pre-wrap;      /* Opera 4-6 */
+    white-space: -o-pre-wrap;    /* Opera 7 */
+    word-wrap: break-word;       /* Internet Explorer 5.5+ */
+  }
+</style>
+<body>
+
+<div ng-controller="apiCtrl">
+
+<h2> Go Martini API Test</h2>
+<p> This is a angular page used to test example apis.
+Pick any of the following login buttons to log in.
+<p ng-repeat='user in users'>
+   <b>Login as:</b> <input type="text" ng-model="user.user"></input>
+   <b>Password</b><input type="text" ng-model="user.pass"></input>
+   <button ng-click="login(user.user, user.pass)">Login</button>
+</p>
+<small ng-show="jwt"> Logged in with token: <b>{{jwt}}</b><button ng-click='jwt=false'>Logout</button></small>
+<p> Try pressing the buttons below either before or after logging in.
+<p><button ng-click="getURL('/api/users', 'Getting User List')">Get User List</button>
+   <button ng-click="getURL('/api/private_widgets', 'Getting Private Widgets')">Get Widgets</button>
+<h3 ng-if='list'>Retrieved list from {{url}}</h3>
+<p ng-repeat='item in list'>{{item.item}}
+  <button ng-click="getURL(url + '/' + item.item.id, 'GET item', true)">GET</button>
+  <input type="text" size="40" ng-model="item.text"></input>
+  <button ng-click="editURL(url + '/' + item.item.id, item)">Save updated item</button>
+</p>
+<h2> Server Info </h2>
+<p ng-hide="message_header">[Responses from the server will appear here]</p>
+<h3 ng-show="message_header">{{message_header}}: {{message_subheader}}</h4>
+<pre>{{message}}</pre>
+
+</div>
+
+<script>
+
+  var app = angular.module("goMartiniApiTest", []);
+
+  app.controller("apiCtrl", function($scope, $http) {
+      $scope.users = [{user: "user1", pass: "user1"}, {user: "user2", pass: "user2"}, {user: "admin", pass: "admin"}]
+      $scope.login = function(user, pwd) {
+        $scope.message_header = "Logging in as '" + user + "'";
+        $http.post("/login", {name: user, password: pwd}).
+        then(function(response) { $scope.jwt = response.data.token ;
+                                  $scope.message_subheader = "Success.";
+                                  $scope.message = JSON.stringify(response);},
+             function(response) { $scope.message_subheader = "Failure.";
+                                  $scope.message = JSON.stringify(response);})
+      };
+      $scope.getURL = function(url, msg, keepList) {
+        $scope.message_header = msg;
+        authUrl = url;
+        if($scope.jwt) authUrl = url + "?access_token=" + $scope.jwt;
+        $http.get(authUrl).
+        then(function(response) { $scope.message_subheader = "Success.";
+                                  if(!keepList) $scope.list = [];
+                                  if(response.data.length) {
+                                    $scope.url = url;
+                                    for(var i=0;i<response.data.length;i++)
+                                      $scope.list.push({text: JSON.stringify(response.data[i]), item: response.data[i]})
+                                  }
+                                  $scope.message = JSON.stringify(response.data);},
+             function(response) { $scope.message_subheader = "Failure.";
+                                  $scope.message = JSON.stringify(response);})
+      };
+      $scope.editURL = function(url, item) {
+        $scope.message_header = "Editing item"
+        authUrl = url;
+        if($scope.jwt) authUrl = url + "?access_token=" + $scope.jwt;
+        $http.patch(authUrl, item.text).
+        then(function(response) { $scope.message_subheader = "Success.";
+                                  item.item = response.data;
+                                  item.text = JSON.stringify(response.data);
+                                  $scope.message = JSON.stringify(response.data);},
+             function(response) { $scope.message_subheader = "Failure.";
+                                  $scope.message = JSON.stringify(response);})
+      };
+  });
+</script>
+
+</body>
+</html>

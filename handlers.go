@@ -142,6 +142,8 @@ func (api *apiServer) postHandlers(itemType reflect.Type, options RouteOptions) 
 
 // patchHandlers returns a handler function list for deleting a single item from the DB
 func (api *apiServer) patchHandlers(itemType reflect.Type, options RouteOptions) []martini.Handler {
+	//unmarshal the uploaded body into req.Result. req.Result should already contain the retrieved item,
+	//we will now contain the updated version.
 	copyItem := func(req *Request, w http.ResponseWriter, r *http.Request, c martini.Context) {
 		body := httpBody(r)
 		if err := json.Unmarshal(body, req.Result); err != nil {

@@ -8,13 +8,15 @@ This is not yet ready for use in production.
 This example creates a webserver which serves (unauthenticated) REST
 endpoints for Widget. These are:
 
-* GET /api/widgets Get full widget list
-* GET /api/widgets/1 Get widget with id==1
-* POST /api/widgets Create a new widget
-* PATCH /api/widgets/1 Update widget with id==1
-* DELETE /api/widgets/1 Delete widget wit id==1
+| Verb    | URI            | Action                          |
+|---------|----------------|-------
+| GET     | /api/widgets   | Get full widget list
+| GET     | /api/widgets/1 | Get widget with id==1
+| POST    | /api/widgets   | Create a new widget
+| PATCH   | /api/widgets/1 | Update widget with id==1
+| DELETE  | /api/widgets/1 | Delete widget wit id==1
 
-```
+```go
 package main
 
 import (
