@@ -68,12 +68,8 @@ func seedDb(db *gorm.DB) {
 
 	db.DropTable(&PrivateWidget{})
 	db.CreateTable(&PrivateWidget{})
-	w1 := PrivateWidget{Name: "User 1's Widget"}
-	w1.UserID = user1.ID
-	db.Create(&w1)
-	w2 := PrivateWidget{Name: "User 2's Widget"}
-	w2.UserID = user2.ID
-	db.Create(&w2)
+	db.Create(&PrivateWidget{Name: "User 1's Widget", UserID: user1.ID})
+	db.Create(&PrivateWidget{Name: "User 2's Widget", UserID: user2.ID})
 }
 
 func main() {
