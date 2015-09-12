@@ -26,18 +26,23 @@ func TestEmptyJWTKey(t *testing.T) {
 // Check adding routes with different options for Read/Write
 func TestReadWriteOptions(t *testing.T) {
 	api := getTestApi()
-	api.AddDefaultRoutes("/trwo/ro", &PrivateWidget{}, RouteOptions{}, RouteOptions{Authenticate: true})
-	api.AddDefaultRoutes("/trwo/rw", &PrivateWidget{}, RouteOptions{}, RouteOptions{}, RouteOptions{Authenticate: true})
+	api.AddDefaultRoutes(&PrivateWidget{},
+		RouteOptions{UriModelName: "trwo_ro"},
+		RouteOptions{Authenticate: true, UriModelName: "trwo_ro"})
+	api.AddDefaultRoutes(&PrivateWidget{},
+		RouteOptions{UriModelName: "trwo_rw"},
+		RouteOptions{UriModelName: "trwo_rw"},
+		RouteOptions{Authenticate: true, UriModelName: "trwo_rw"})
 
-	testReq(t, "ReadOnly(Read)", "GET", "/api/trwo/ro", "", 200)
-	testReq(t, "ReadOnly(WRITE)", "POST", "/api/trwo/ro", `{"name":"sqlinjector"}`, 401)
-	testReq(t, "ReadOnly(DELETE)", "DELETE", "/api/trwo/ro/1", "", 401)
-	testReq(t, "ReadWrite(Read)", "GET", "/api/trwo/rw", "", 200)
-	testReq(t, "ReadWrite(WRITE)", "POST", "/api/trwo/rw", `{"name":"important widget"}`, 200)
-	testReq(t, "ReadWrite(DELETE)", "DELETE", "/api/trwo/rw/1", "", 401)
+	testReq(t, "ReadOnly(Read)", "GET", "/api/trwo_ro", "", 200)
+	testReq(t, "ReadOnly(WRITE)", "POST", "/api/trwo_ro", `{"name":"sqlinjector"}`, 401)
+	testReq(t, "ReadOnly(DELETE)", "DELETE", "/api/trwo_ro/1", "", 401)
+	testReq(t, "ReadWrite(Read)", "GET", "/api/trwo_rw", "", 200)
+	testReq(t, "ReadWrite(WRITE)", "POST", "/api/trwo_rw", `{"name":"important widget"}`, 200)
+	testReq(t, "ReadWrite(DELETE)", "DELETE", "/api/trwo_rw/1", "", 401)
 
 	defer ensurePanic(t, "AddDefaultRoute accepted 4 route options")
-	api.AddDefaultRoutes("/trwo/fail", &PrivateWidget{}, RouteOptions{}, RouteOptions{}, RouteOptions{}, RouteOptions{})
+	api.AddDefaultRoutes(&PrivateWidget{}, RouteOptions{}, RouteOptions{}, RouteOptions{}, RouteOptions{})
 }
 
 // Check getOptions fails for unknown route type

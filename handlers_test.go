@@ -63,8 +63,9 @@ func (t *testRec) record(handler string) {
 
 func TestCallbacks(t *testing.T) {
 	api := getTestApi()
-	api.AddDefaultRoutes("/recordRoutes", &PrivateWidget{},
+	api.AddDefaultRoutes(&PrivateWidget{},
 		RouteOptions{
+			UriModelName: "recordRoutes",
 			Authenticate: func(c martini.Context) { c.Map(&testRec{"Authenticate"}) },
 			Authorize:    func(tr *testRec) { tr.record("Authorize") },
 			Query:        func(tr *testRec) { tr.record("Query") },
@@ -144,6 +145,7 @@ func TestPatchHandlers(t *testing.T) {
 	getTestApi().DB().Create(&newWidget)
 
 	testReq(t, "EditItem", "PATCH", "/api/widgets/42", "", 404)
+	testReq(t, "EditItem", "PATCH", fmt.Sprintf("/api/widgets/%v", newWidget.ID), `{"name:EditedName"}`, 422)
 	body := testReq(t, "EditItem", "PATCH", fmt.Sprintf("/api/widgets/%v", newWidget.ID), `{"name":"EditedName"}`, 200)
 	checkWidget := Widget{}
 	json.Unmarshal([]byte(body), &checkWidget)

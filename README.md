@@ -18,33 +18,34 @@ endpoints for Widget. These are:
 package main
 
 import (
-  "github.com/jinzhu/gorm"
-  _ "github.com/mattn/go-sqlite3"
+	"github.com/jinzhu/gorm"
+	_ "github.com/mattn/go-sqlite3"
 
-  "github.com/ivanol/go-martini-api"
+	"github.com/ivanol/go-martini-api"
 )
 
 type Widget struct {
-    ID   uint   `gorm:"primary_key" json:"id"`
-    Name string `json:"name"`
+	ID   uint   `gorm:"primary_key" json:"id"`
+	Name string `json:"name"`
 }
 
 func main() {
-    // Create a DB with the test tables and a seed user
-    db, _ := gorm.Open("sqlite3", "./api-test.db")
-    db.CreateTable(&Widget{})
+	// Create a DB with the test table and a seed widget
+	db, _ := gorm.Open("sqlite3", "./api-example.db")
+	db.CreateTable(&Widget{})
+	db.Create(&Widget{Name: "Test Widget"})
 
-    api.UseStandardRest(&Widget{})
+	// Create an API server with default options
+	a := api.New(api.Options{Db: &db})
 
-    a := api.New(api.Options{})
+	// Add the Default REST routes to it (GET, POST, PATCH, DELETE)
+	a.AddDefaultRoutes(&Widget{})
 
-    a.Martini().RunOnAddr("127.0.0.1:3000")
+	// Run the server.
+	a.Martini().RunOnAddr("127.0.0.1:3000")
 }
 ```
 
 User authentication and authorization is also possible, but without
 documentation except in the source code so far. The API is still likely
-to change, so don't rely on it. In particular the UseStandardRest()
-interface for registering models before the api.New call will probably
-disappear.
-
+to change, so please don't rely on it yet.

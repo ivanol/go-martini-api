@@ -2,8 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"io"
-	"io/ioutil"
 	"net/http"
 	"reflect"
 
@@ -145,17 +143,7 @@ func (api *apiServer) postHandlers(itemType reflect.Type, options RouteOptions) 
 // patchHandlers returns a handler function list for deleting a single item from the DB
 func (api *apiServer) patchHandlers(itemType reflect.Type, options RouteOptions) []martini.Handler {
 	copyItem := func(req *Request, w http.ResponseWriter, r *http.Request, c martini.Context) {
-		body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
-		if err != nil {
-			log.WithFields(log.Fields{"error": err}).Warn("Can't read request body")
-			w.WriteHeader(500) // unprocessable entity
-			return
-		}
-		if err := r.Body.Close(); err != nil {
-			log.WithFields(log.Fields{"error": err}).Warn("Can't close request")
-			w.WriteHeader(500) // unprocessable entity
-			return
-		}
+		body := httpBody(r)
 		if err := json.Unmarshal(body, req.Result); err != nil {
 			log.WithFields(log.Fields{"error": err}).Warn("Can't parse incoming json")
 			w.WriteHeader(422) // unprocessable entity
@@ -200,18 +188,7 @@ func (api *apiServer) deleteHandlers(itemType reflect.Type, options RouteOptions
 // a struct
 func jsonParseBody(itemType reflect.Type) martini.Handler {
 	return func(req *Request, w http.ResponseWriter, r *http.Request, c martini.Context) {
-		//log.Errorf("Uploaded before %v", req.Uploaded)
-		body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
-		if err != nil {
-			log.WithFields(log.Fields{"error": err}).Warn("Can't read request body")
-			w.WriteHeader(500) // unprocessable entity
-			return
-		}
-		if err := r.Body.Close(); err != nil {
-			log.WithFields(log.Fields{"error": err}).Warn("Can't close request")
-			w.WriteHeader(500) // unprocessable entity
-			return
-		}
+		body := httpBody(r)
 		item := reflect.New(itemType).Interface()
 		if err := json.Unmarshal(body, item); err != nil {
 			log.WithFields(log.Fields{"error": err}).Warn("Can't parse incoming json")

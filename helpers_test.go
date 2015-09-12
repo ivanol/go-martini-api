@@ -96,17 +96,18 @@ func getTestApi() API {
 	// of the test run
 	if !*verboseMartini {
 		log.SetLevel(log.ErrorLevel)
+	} else {
+		log.SetLevel(log.DebugLevel)
 	}
-
-	//Register Privatewidget for automatic inclusion before loading api.
-	UseStandardRest(&PrivateWidget{}, RouteOptions{Authenticate: true})
-	UseStandardRest(&Widget{})
-	UseStandardRest(&Widget{}, RouteOptions{UriModelName: "other_widgets"})
 
 	db := createAndSeedDb()
 	a := New(Options{JwtKey: "RandomString", Db: db, Martini: getSilentMartini()})
 
-	a.AddDefaultRoutes("/users", &User{})
+	a.AddDefaultRoutes(&PrivateWidget{}, RouteOptions{Authenticate: true})
+	a.AddDefaultRoutes(&Widget{})
+	a.AddDefaultRoutes(&Widget{}, RouteOptions{UriModelName: "other_widgets"})
+
+	a.AddDefaultRoutes(&User{})
 	a.SetAuth(&User{}, "/auth")
 
 	test_api = a
