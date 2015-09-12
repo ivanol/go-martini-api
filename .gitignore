@@ -1,0 +1,5 @@
+*.swp
+config/secret/*
+webserver
+api-test.db
+c.out
