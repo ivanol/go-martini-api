@@ -46,3 +46,13 @@ func httpBody(r *http.Request) []byte {
 	}
 	return body
 }
+
+// getID takes a structure pointer which should have a field called ID.
+// It returns that structures value.
+func getID(sp interface{}) (interface{}, error) {
+	sv := reflect.ValueOf(sp).Elem()
+	if sv.Kind() != reflect.Struct {
+		return nil, fmt.Errorf("getID expected a structure")
+	}
+	return sv.FieldByName("ID").Interface(), nil
+}

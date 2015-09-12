@@ -144,8 +144,9 @@ func TestPatchHandlers(t *testing.T) {
 	newWidget := Widget{Name: "ToEdit"}
 	getTestApi().DB().Create(&newWidget)
 
-	testReq(t, "EditItem", "PATCH", "/api/widgets/42", "", 404)
-	testReq(t, "EditItem", "PATCH", fmt.Sprintf("/api/widgets/%v", newWidget.ID), `{"name:EditedName"}`, 422)
+	testReq(t, "EditItem(Doesn'tExist)", "PATCH", "/api/widgets/42", "", 404)
+	testReq(t, "EditItem(MalformedJson)", "PATCH", fmt.Sprintf("/api/widgets/%v", newWidget.ID), `{"name:EditedName"}`, 422)
+	testReq(t, "EditItem(EditID)", "PATCH", fmt.Sprintf("/api/widgets/%v", newWidget.ID), `{"id":0,"name":"EditedName"}`, 422)
 	body := testReq(t, "EditItem", "PATCH", fmt.Sprintf("/api/widgets/%v", newWidget.ID), `{"name":"EditedName"}`, 200)
 	checkWidget := Widget{}
 	json.Unmarshal([]byte(body), &checkWidget)

@@ -146,8 +146,15 @@ func (api *apiServer) patchHandlers(itemType reflect.Type, options RouteOptions)
 	//we will now contain the updated version.
 	copyItem := func(req *Request, w http.ResponseWriter, r *http.Request, c martini.Context) {
 		body := httpBody(r)
+		beforeID, _ := getID(req.Result)
 		if err := json.Unmarshal(body, req.Result); err != nil {
 			log.WithFields(log.Fields{"error": err}).Warn("Can't parse incoming json")
+			w.WriteHeader(422) // unprocessable entity
+			return
+		}
+		afterID, _ := getID(req.Result)
+		if beforeID != afterID {
+			log.WithFields(log.Fields{"afterID": afterID, "beforeID": beforeID}).Warn("Patch trying to change ID")
 			w.WriteHeader(422) // unprocessable entity
 			return
 		}
