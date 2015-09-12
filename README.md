@@ -7,12 +7,14 @@ This is not yet ready for use in production.
 ## Example
 This example creates a webserver which serves (unauthenticated) REST
 endpoints for Widget. These are:
+
 * GET /api/widgets Get full widget list
 * GET /api/widgets/1 Get widget with id==1
 * POST /api/widgets Create a new widget
 * PATCH /api/widgets/1 Update widget with id==1
 * DELETE /api/widgets/1 Delete widget wit id==1
-'''
+
+```
 package main
 
 import (
@@ -38,7 +40,8 @@ func main() {
 
     a.Martini().RunOnAddr("127.0.0.1:3000")
 }
-'''
+```
+
 User authentication and authorization is also possible, but without
 documentation except in the source code so far. The API is still likely
 to change, so don't rely on it. In particular the UseStandardRest()
