@@ -63,11 +63,14 @@ limit a route.
 |CheckUpload |   |Yes |Yes  |      |
 |EditResult  |Yes|Yes |Yes  |Yes   |
 
-All of these Handlers have access to a `*api.Request` object which they can
-modify. This contains `DB *gorm.DB` which is the database object for this request.
-This can be used to scope a query, which will limit GET, PATCH, and DELETE
-requests. The actual query is made immediately after calling the Query handler, and
-this should be used for any such scoping. eg:
+All of these Handlers have access to a `*api.Request` object which they
+can modify. This contains `DB *gorm.DB` which is the database object used
+for queries for this request.  This can be used to scope the query used to
+retrieve the existing DB object for GET, PATCH, and DELETE requests. Note
+that `Create()`, `Save()`, and `Delete()` will use the original DB object
+as otherwise they will not work if you add eg. a Join() to the request
+DB object. The actual query is made immediately after calling the Query
+handler, and this should be used for any such scoping. eg:
 
 ```go
 a.AddDefaultRoutes(&Widget{}, api.RouteOptions{

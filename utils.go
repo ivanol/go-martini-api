@@ -36,6 +36,17 @@ func pluralCamelName(i interface{}) string {
 	return t3
 }
 
+// pluralCamelNameType takes a type, and returns its type converted
+// to camel_case and pluralised.
+func pluralCamelNameType(typ reflect.Type) string {
+	t := fmt.Sprintf("%v", typ)
+	a := strings.Split(t, ".")
+	t1 := a[len(a)-1]
+	t2 := snaker.CamelToSnake(t1)
+	t3 := inflector.Pluralize(t2)
+	return t3
+}
+
 // httpBody returns the uploaded http body. On io failure we just return
 // an empty array.
 func httpBody(r *http.Request) []byte {

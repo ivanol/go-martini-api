@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"reflect"
 
@@ -99,10 +100,12 @@ func sendResult(req *Request) []byte {
 
 // Handler to retrieve a single item by id.
 func getItemHandler(itemType reflect.Type) martini.Handler {
+	tableName := pluralCamelNameType(itemType)
+	qstring := fmt.Sprintf("%s.id = ?", tableName)
 	return func(params martini.Params, req *Request, w http.ResponseWriter) {
 		id := params["id"]
 		item := reflect.New(itemType).Interface()
-		if req.DB.Where("id = ?", id).Find(item).RecordNotFound() {
+		if req.DB.Where(qstring, id).Find(item).RecordNotFound() {
 			w.WriteHeader(404)
 		} else {
 			req.Result = item
@@ -160,8 +163,8 @@ func (api *apiServer) patchHandlers(itemType reflect.Type, options RouteOptions)
 		}
 		req.Uploaded = req.Result
 	}
-	patchHandler := func(params martini.Params, req *Request, w http.ResponseWriter) {
-		req.DB.Save(req.Uploaded)
+	patchHandler := func(params martini.Params, req *Request, w http.ResponseWriter, a API) {
+		a.DB().Save(req.Uploaded)
 		req.Result = req.Uploaded
 	}
 	return handlerList(
@@ -179,15 +182,17 @@ func (api *apiServer) patchHandlers(itemType reflect.Type, options RouteOptions)
 
 // deleteHandlers returns a handler function list for deleting a single item from the DB
 func (api *apiServer) deleteHandlers(itemType reflect.Type, options RouteOptions) []martini.Handler {
+	tableName := pluralCamelNameType(itemType)
+	qstring := fmt.Sprintf("%s.id = ?", tableName)
 	//TODO use getItemHandler() as part of deleteHandler
-	deleteHandler := func(params martini.Params, req *Request, w http.ResponseWriter) {
+	deleteHandler := func(params martini.Params, req *Request, w http.ResponseWriter, a API) {
 		id := params["id"]
 		item := reflect.New(itemType).Interface()
-		if req.DB.Where("id = ?", id).Find(item).RecordNotFound() {
+		if req.DB.Where(qstring, id).Find(item).RecordNotFound() {
 			w.WriteHeader(404)
 		} else {
 			req.Result = item
-			req.DB.Delete(item)
+			a.DB().Delete(item)
 		}
 	}
 	return api.buildHandlerList(options, deleteHandler)
@@ -213,12 +218,12 @@ func jsonParseBody(itemType reflect.Type) martini.Handler {
 // Authorized and Authenticated your user using callbacks, and validated the req.Uploaded
 // structure in the CheckUpload callback.
 func doCreate(itemType reflect.Type) martini.Handler {
-	return func(req *Request, w http.ResponseWriter) {
+	return func(req *Request, w http.ResponseWriter, a API) {
 		uploaded := req.Uploaded
 		log.Printf("upload is a %T\n", uploaded)
 
 		//item := reflect.New(itemType).Elem().Interface()
-		post := req.DB.Create(req.Uploaded)
+		post := a.DB().Create(req.Uploaded)
 		err := post.Error
 		if err != nil {
 			log.Warn("Error creating in doCreate: ", err)

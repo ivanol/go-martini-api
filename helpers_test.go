@@ -72,6 +72,9 @@ func getTestDb() *gorm.DB {
 	db.Create(&Widget{ID: 3, Name: "Widget 3"})
 
 	test_db = &db
+	if *verboseMartini {
+		test_db = test_db.Debug()
+	}
 	return test_db
 }
 
