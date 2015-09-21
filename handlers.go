@@ -24,6 +24,7 @@ import (
 type Request struct {
 	DB       *gorm.DB
 	API      API
+	Method   string // 'GET', 'POST', 'PUT', or 'DELETE'
 	Result   interface{}
 	Uploaded interface{}
 }
@@ -63,9 +64,9 @@ func (api *apiServer) appendAuthenticateHandler(handlers []martini.Handler, auth
 // buildHandlerList returns a list of handlers for a request.
 // TODO? have a replaceResult handler (or maybe a options.DontSend) that prevents us
 // sending the results and lets us be used as pure middleware
-func (api *apiServer) buildHandlerList(options RouteOptions, dbHandler martini.Handler) []martini.Handler {
+func (api *apiServer) buildHandlerList(method string, options RouteOptions, dbHandler martini.Handler) []martini.Handler {
 	return handlerList(
-		bindRequestHandler,
+		bindRequestHandler(method),
 		api.getAuthenticateHandler(options.Authenticate),
 		options.Authorize,
 		options.Query,
@@ -87,9 +88,11 @@ func handlerList(handlers ...martini.Handler) []martini.Handler {
 
 // bindRequestHandler creates an empty api request object and binds it to the
 // martini
-func bindRequestHandler(c martini.Context, a API) {
-	req := Request{DB: a.DB(), API: a}
-	c.Map(&req)
+func bindRequestHandler(method string) martini.Handler {
+	return func(c martini.Context, a API) {
+		req := Request{DB: a.DB(), API: a, Method: method}
+		c.Map(&req)
+	}
 }
 
 // sendResult takes the item found at req.Result, marshals it to JSON, and returns it
@@ -116,7 +119,7 @@ func getItemHandler(itemType reflect.Type) martini.Handler {
 // itemHandlers returns a handler function list for retrieving a single item from the gorm DB by
 // item type.
 func (api *apiServer) itemHandlers(itemType reflect.Type, options RouteOptions) []martini.Handler {
-	return api.buildHandlerList(options, getItemHandler(itemType))
+	return api.buildHandlerList("GET", options, getItemHandler(itemType))
 }
 
 // indexHandlers returns a handler function list for retrieving an index of functions from the gorm DB by
@@ -127,13 +130,13 @@ func (api *apiServer) indexHandlers(sliceType reflect.Type, options RouteOptions
 		req.DB.Find(items)
 		req.Result = items
 	}
-	return api.buildHandlerList(options, indexHandler)
+	return api.buildHandlerList("GET", options, indexHandler)
 }
 
 // postHandlers returns a handler function list for posting a single item to the DB
 func (api *apiServer) postHandlers(itemType reflect.Type, options RouteOptions) []martini.Handler {
 	return handlerList(
-		bindRequestHandler,
+		bindRequestHandler("POST"),
 		api.getAuthenticateHandler(options.Authenticate),
 		options.Authorize,
 		jsonParseBody(itemType),
@@ -168,7 +171,7 @@ func (api *apiServer) patchHandlers(itemType reflect.Type, options RouteOptions)
 		req.Result = req.Uploaded
 	}
 	return handlerList(
-		bindRequestHandler,
+		bindRequestHandler("PATCH"),
 		api.getAuthenticateHandler(options.Authenticate),
 		options.Authorize,
 		options.Query,
@@ -195,7 +198,7 @@ func (api *apiServer) deleteHandlers(itemType reflect.Type, options RouteOptions
 			a.DB().Delete(item)
 		}
 	}
-	return api.buildHandlerList(options, deleteHandler)
+	return api.buildHandlerList("DELETE", options, deleteHandler)
 }
 
 // jsonParseBody returns a martini handler that deserialises the json body of a request into

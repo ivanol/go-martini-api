@@ -66,17 +66,23 @@ func TestCallbacks(t *testing.T) {
 	api.AddDefaultRoutes(&PrivateWidget{},
 		RouteOptions{
 			UriModelName: "recordRoutes",
-			Authenticate: func(c martini.Context) { c.Map(&testRec{"Authenticate"}) },
-			Authorize:    func(tr *testRec) { tr.record("Authorize") },
-			Query:        func(tr *testRec) { tr.record("Query") },
-			CheckUpload:  func(tr *testRec) { tr.record("CheckUpload") },
+			Authenticate: func(req *Request, c martini.Context) {
+				tr := testRec{req.Method}
+				tr.record("Authenticate")
+				c.Map(&tr)
+			},
+			Authorize:   func(tr *testRec) { tr.record("Authorize") },
+			Query:       func(tr *testRec) { tr.record("Query") },
+			CheckUpload: func(tr *testRec) { tr.record("CheckUpload") },
 			EditResult: func(tr *testRec, req *Request) {
 				tr.record("EditResult")
 				req.Result = tr.handlers
 			}})
 	// Note expected result is a marshalled json string - hence the `""` not ""
-	testMethodHandlers(t, "TestCallbacks(GET)", "GET", `"Authenticate:Authorize:Query:EditResult"`)
-	testMethodHandlers(t, "TestCallbacks(POST)", "POST", `"Authenticate:Authorize:CheckUpload:EditResult"`)
+	testMethodHandlers(t, "TestCallbacks(GET)", "GET", `"GET:Authenticate:Authorize:Query:EditResult"`)
+	testMethodHandlers(t, "TestCallbacks(POST)", "POST", `"POST:Authenticate:Authorize:CheckUpload:EditResult"`)
+	testMethodHandlers(t, "TestCallbacks(PATCH)", "PATCH", `"PATCH:Authenticate:Authorize:Query:CheckUpload:EditResult"`)
+	testMethodHandlers(t, "TestCallbacks(DELETE)", "DELETE", `"DELETE:Authenticate:Authorize:Query:EditResult"`)
 }
 
 // helper function for TestCallbacks. Call the request, and check the expected
@@ -86,7 +92,13 @@ func testMethodHandlers(t *testing.T, name string, method string, expected strin
 	if method == "POST" || method == "PUT" || method == "PATCH" {
 		body = `{"name":"testname"}`
 	}
-	handlers := testReq(t, name, method, "/api/recordRoutes", body, 200)
+	uri := "/api/recordRoutes"
+	if method == "DELETE" || method == "PATCH" {
+		newWidget := PrivateWidget{Name: "ToDelete"}
+		getTestApi().DB().Create(&newWidget)
+		uri = fmt.Sprintf("%s/%d", uri, newWidget.ID)
+	}
+	handlers := testReq(t, name, method, uri, body, 200)
 	if handlers != expected {
 		t.Errorf("For %s expected handler list %s, got %s", method, expected, handlers)
 	} else {
