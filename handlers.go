@@ -202,9 +202,9 @@ func (api *apiServer) deleteHandlers(itemType reflect.Type, options RouteOptions
 }
 
 // jsonParseBody returns a martini handler that deserialises the json body of a request into
-// a struct
+// a struct, and validates it.
 func jsonParseBody(itemType reflect.Type) martini.Handler {
-	return func(req *Request, w http.ResponseWriter, r *http.Request, c martini.Context) {
+	return func(req *Request, w http.ResponseWriter, r *http.Request, c martini.Context, params martini.Params) {
 		body := httpBody(r)
 		item := reflect.New(itemType).Interface()
 		if err := json.Unmarshal(body, item); err != nil {
@@ -213,6 +213,16 @@ func jsonParseBody(itemType reflect.Type) martini.Handler {
 			return
 		}
 		req.Uploaded = item
+		switch req.Uploaded.(type) {
+		case NeedsValidation:
+			err := req.Uploaded.(NeedsValidation).ValidateUpload(req, params)
+			if err != nil && len(err) != 0 {
+				log.WithFields(log.Fields{"error": err}).Warn("Validation error")
+				j, _ := json.Marshal(err)
+				w.WriteHeader(422)
+				w.Write([]byte(fmt.Sprintf(`{"errors":%v}`, string(j))))
+			}
+		}
 		//log.Errorf("Uploaded after %v", req.Uploaded)
 	}
 }

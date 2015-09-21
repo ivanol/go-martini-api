@@ -85,6 +85,15 @@ func TestCallbacks(t *testing.T) {
 	testMethodHandlers(t, "TestCallbacks(DELETE)", "DELETE", `"DELETE:Authenticate:Authorize:Query:EditResult"`)
 }
 
+// Test our we callback NeedsValidation interfaces appropriately.
+func TestNeedsValidation(t *testing.T) {
+	body := testReq(t, "PostItem", "POST", "/api/verified_widgets", `{"must_be_hello_world":"NewWidget"}`, 422)
+	if body != `{"errors":{"must_be_hello_horld":"Is not equal to \"Hello World!!\""}}` {
+		t.Errorf("Didn't receive correct error message for unverified widget: %s\n", body)
+	}
+	testReq(t, "PostItem", "POST", "/api/verified_widgets", `{"must_be_hello_world":"Hello World!!"}`, 200)
+}
+
 // helper function for TestCallbacks. Call the request, and check the expected
 // series of callbacks is returned.
 func testMethodHandlers(t *testing.T, name string, method string, expected string) {

@@ -72,6 +72,15 @@ type API interface {
 	IsAuthenticated() interface{}
 }
 
+// Any model implementing the NeedsValidation interface will have this called
+// on upload (ie. PATCH, and POST requests). Note that api.Request.DB is a DB object
+// that may have been scoped earlier in the handler chain. Any checks on other
+// models should probably use the original DB object at api.Request.API.DB()
+type ValidationErrors map[string]string
+type NeedsValidation interface {
+	ValidateUpload(*Request, martini.Params) ValidationErrors
+}
+
 type apiServer struct {
 	db         *gorm.DB
 	martini    *martini.ClassicMartini

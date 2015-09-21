@@ -43,6 +43,20 @@ type WidgetClone struct {
 	Name string `json:"name"`
 }
 
+type VerifiedWidget struct {
+	ID               uint   `gorm:"primary_key" json:"id"`
+	MustBeHelloWorld string `json:"must_be_hello_world"`
+}
+
+func (vw *VerifiedWidget) ValidateUpload(*Request, martini.Params) ValidationErrors {
+	if vw.MustBeHelloWorld == "Hello World!!" {
+		return nil
+	}
+	ve := make(map[string]string)
+	ve["must_be_hello_horld"] = "Is not equal to \"Hello World!!\""
+	return ve
+}
+
 var test_db *gorm.DB
 
 func getTestDb() *gorm.DB {
@@ -58,9 +72,11 @@ func getTestDb() *gorm.DB {
 	db.DropTable(&User{})
 	db.DropTable(&PrivateWidget{})
 	db.DropTable(&Widget{})
+	db.DropTable(&VerifiedWidget{})
 	db.CreateTable(&User{})
 	db.CreateTable(&PrivateWidget{})
 	db.CreateTable(&Widget{})
+	db.CreateTable(&VerifiedWidget{})
 
 	var private_widgets []PrivateWidget
 	db.Model(&User{}).Related(&private_widgets)
@@ -114,6 +130,7 @@ func getTestApi() API {
 
 	a.AddDefaultRoutes(&PrivateWidget{}, RouteOptions{Authenticate: true})
 	a.AddDefaultRoutes(&Widget{})
+	a.AddDefaultRoutes(&VerifiedWidget{})
 	a.AddDefaultRoutes(&Widget{}, RouteOptions{UriModelName: "other_widgets"})
 
 	a.AddDefaultRoutes(&User{})

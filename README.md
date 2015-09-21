@@ -81,7 +81,10 @@ a.AddDefaultRoutes(&Widget{}, api.RouteOptions{
 
 CheckUpload is called for POST and PATCH calls. `req.Uploaded` will contain a pointer
 to the uploaded object, and this can be inspected, used to deny the request, or edited
-before it is saved to the database.
+before it is saved to the database. As an alternative (or addition) to CheckUpload, if
+you implement the ValidateUpload function on your model pointer then it will fulfill
+the NeedsValidation interface, and ValidateUpload will be called as part of the upload/
+patch process.
 
 EditResult is the last customisable handler and is called for all
 calls. It has access to req.Result, which will be a pointer to the
