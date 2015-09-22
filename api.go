@@ -12,9 +12,10 @@ import (
 
 // Global Options for an API instance.
 type Options struct {
-	JwtKey  string
-	Martini *martini.ClassicMartini
-	Db      *gorm.DB
+	JwtKey    string
+	Martini   *martini.ClassicMartini
+	Db        *gorm.DB
+	UriPrefix string // defaults to api. ModelName will be found by default at /UriModelName/model_names
 }
 
 // RouteOptions can be applied to a single route or to a model. Pass them as
@@ -137,7 +138,7 @@ const (
 //Implements API interface for AddIndexRoute()
 func (api *apiServer) AddIndexRoute(modelP interface{}, _options ...RouteOptions) {
 	options := getOptions(_options, ROUTE_READ)
-	finalPath := makePath(modelP, options)
+	finalPath := makePath(modelP, api.options, options)
 	modelType := reflect.TypeOf(modelP).Elem()
 	sliceType := reflect.SliceOf(modelType)
 	log.WithFields(log.Fields{"Model": modelType, "path": finalPath}).Info("Adding INDEX route")
@@ -147,7 +148,7 @@ func (api *apiServer) AddIndexRoute(modelP interface{}, _options ...RouteOptions
 //Implements API interface for AddGetRoute()
 func (api *apiServer) AddGetRoute(modelP interface{}, _options ...RouteOptions) {
 	options := getOptions(_options, ROUTE_READ)
-	finalPath := makePath(modelP, options) + "/:id"
+	finalPath := makePath(modelP, api.options, options) + "/:id"
 	modelType := reflect.TypeOf(modelP).Elem()
 	log.WithFields(log.Fields{"Model": modelType, "path": finalPath}).Info("Adding GET route")
 	api.martini.Get(finalPath, api.itemHandlers(modelType, options)...)
@@ -156,7 +157,7 @@ func (api *apiServer) AddGetRoute(modelP interface{}, _options ...RouteOptions) 
 //Implements API interface for AddPostRoute()
 func (api *apiServer) AddPostRoute(modelP interface{}, _options ...RouteOptions) {
 	options := getOptions(_options, ROUTE_WRITE)
-	finalPath := makePath(modelP, options)
+	finalPath := makePath(modelP, api.options, options)
 	modelType := reflect.TypeOf(modelP).Elem()
 	log.WithFields(log.Fields{"Model": modelType, "path": finalPath}).Info("Adding POST route")
 	api.martini.Post(finalPath, api.postHandlers(modelType, options)...)
@@ -165,7 +166,7 @@ func (api *apiServer) AddPostRoute(modelP interface{}, _options ...RouteOptions)
 //Implements API interface for AddPatchRoute()
 func (api *apiServer) AddPatchRoute(modelP interface{}, _options ...RouteOptions) {
 	options := getOptions(_options, ROUTE_WRITE)
-	finalPath := makePath(modelP, options) + "/:id"
+	finalPath := makePath(modelP, api.options, options) + "/:id"
 	modelType := reflect.TypeOf(modelP).Elem()
 	log.WithFields(log.Fields{"Model": modelType, "path": finalPath}).Info("Adding PATCH route")
 	api.martini.Patch(finalPath, api.patchHandlers(modelType, options)...)
@@ -174,7 +175,7 @@ func (api *apiServer) AddPatchRoute(modelP interface{}, _options ...RouteOptions
 //Implements API interface for AddDeleteRoute()
 func (api *apiServer) AddDeleteRoute(modelP interface{}, _options ...RouteOptions) {
 	options := getOptions(_options, ROUTE_DELETE)
-	finalPath := makePath(modelP, options) + "/:id"
+	finalPath := makePath(modelP, api.options, options) + "/:id"
 	modelType := reflect.TypeOf(modelP).Elem()
 	log.WithFields(log.Fields{"Model": modelType, "path": finalPath}).Info("Adding DELETE route")
 	api.martini.Delete(finalPath, api.deleteHandlers(modelType, options)...)
@@ -217,10 +218,14 @@ func getOptions(options []RouteOptions, routeType int) RouteOptions {
 }
 
 // makePath returns the path for the item, modidified as required by any options.
-func makePath(modelP interface{}, options RouteOptions) string {
-	path := options.UriModelName
+func makePath(modelP interface{}, apiOptions *Options, routeOptions RouteOptions) string {
+	path := routeOptions.UriModelName
+	prefix := "/api"
+	if len(apiOptions.UriPrefix) != 0 {
+		prefix = "/" + apiOptions.UriPrefix
+	}
 	if len(path) == 0 {
 		path = pluralCamelName(modelP)
 	}
-	return "/api" + options.Prefix + "/" + path
+	return prefix + routeOptions.Prefix + "/" + path
 }

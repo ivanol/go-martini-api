@@ -4,6 +4,8 @@
 package api
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"testing"
 )
 
@@ -49,6 +51,21 @@ func TestReadWriteOptions(t *testing.T) {
 
 	defer ensurePanic(t, "AddDefaultRoute accepted 4 route options")
 	api.AddDefaultRoutes(&PrivateWidget{}, RouteOptions{}, RouteOptions{}, RouteOptions{}, RouteOptions{})
+}
+
+func TestApiPrefix(t *testing.T) {
+	db := getTestDb()
+	api := New(Options{JwtKey: "RandomString", Db: db, Martini: getSilentMartini(), UriPrefix: "test_api_prefix"})
+	api.AddDefaultRoutes(&Widget{})
+	req, err := http.NewRequest("GET", "/test_api_prefix/widgets", nil)
+	if err != nil {
+		t.Errorf("Error creating request for TestApiPrefix")
+	}
+	httpRecorder := httptest.NewRecorder()
+	api.Martini().ServeHTTP(httpRecorder, req)
+	if httpRecorder.Code != 200 {
+		t.Errorf("Didn't add correct uri at test_api_prefix")
+	}
 }
 
 // Check getOptions fails for unknown route type
