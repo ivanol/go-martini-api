@@ -24,7 +24,7 @@ import (
 type Request struct {
 	DB       *gorm.DB
 	API      API
-	Method   string // 'GET', 'POST', 'PUT', or 'DELETE'
+	Method   string // 'GET', 'POST', 'PUT', 'PATCH' or 'DELETE'
 	Result   interface{}
 	Uploaded interface{}
 }
@@ -191,9 +191,15 @@ func (api *apiServer) deleteHandlers(itemType reflect.Type, options RouteOptions
 	deleteHandler := func(params martini.Params, req *Request, w http.ResponseWriter, a API) {
 		id := params["id"]
 		item := reflect.New(itemType).Interface()
-		if req.DB.Where(qstring, id).Find(item).RecordNotFound() {
-			w.WriteHeader(404)
+		if err := req.DB.Where(qstring, id).Find(item); err.Error != nil {
+			log.WithFields(log.Fields{"error": err}).Info("SQL query finding record to delete")
+			if err.RecordNotFound() {
+				w.WriteHeader(404)
+			} else {
+				w.WriteHeader(500)
+			}
 		} else {
+			log.WithFields(log.Fields{"item": item}).Info("Deleting")
 			req.Result = item
 			a.DB().Delete(item)
 		}

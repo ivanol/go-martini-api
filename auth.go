@@ -38,7 +38,7 @@ func (api *apiServer) getLoginHandler() func(*JsonBody, http.ResponseWriter, mar
 // the request context
 func (api *apiServer) IsAuthenticated() interface{} {
 	return func(w http.ResponseWriter, r *http.Request, c martini.Context) {
-		token, _ := jwt.ParseFromRequest(r, func(token *jwt.Token) (interface{}, error) {
+		token, tokerr := jwt.ParseFromRequest(r, func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				log.WithFields(log.Fields{"method": token.Header["alg"]}).Warn("JWT Auth: Unexpected signing method.")
 				return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
@@ -55,7 +55,7 @@ func (api *apiServer) IsAuthenticated() interface{} {
 			}
 			c.Map(user)
 		} else {
-			log.Warn("Auth: JWT token did not validate")
+			log.WithFields(log.Fields{"error": tokerr}).Warn("Auth: JWT token did not validate")
 			w.WriteHeader(401)
 			fmt.Fprintf(w, "Unauthorized")
 		}
