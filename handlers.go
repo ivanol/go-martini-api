@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
+	"time"
 
 	"github.com/go-martini/martini"
 	"github.com/jinzhu/gorm"
@@ -45,27 +46,11 @@ func (api *apiServer) getAuthenticateHandler(auth interface{}) martini.Handler {
 	return nil
 }
 
-// options.Authenticate may either be a bool (and if true we add our default auth handler),
-// or a handler, in which case we add this.
-func (api *apiServer) appendAuthenticateHandler(handlers []martini.Handler, auth interface{}) []martini.Handler {
-	if auth == nil {
-		return handlers
-	}
-	if bauth, ok := auth.(bool); ok {
-		if bauth {
-			return append(handlers, api.IsAuthenticated())
-		}
-	} else {
-		return append(handlers, auth)
-	}
-	return handlers
-}
-
 // buildHandlerList returns a list of handlers for a request.
 // TODO? have a replaceResult handler (or maybe a options.DontSend) that prevents us
 // sending the results and lets us be used as pure middleware
 func (api *apiServer) buildHandlerList(method string, options RouteOptions, dbHandler martini.Handler) []martini.Handler {
-	return handlerList(
+	return api.handlerList(
 		bindRequestHandler(method),
 		api.getAuthenticateHandler(options.Authenticate),
 		options.Authorize,
@@ -76,8 +61,11 @@ func (api *apiServer) buildHandlerList(method string, options RouteOptions, dbHa
 }
 
 // Concatenate all non nil arguments into a handler list.
-func handlerList(handlers ...martini.Handler) []martini.Handler {
+func (api *apiServer) handlerList(handlers ...martini.Handler) []martini.Handler {
 	result := make([]martini.Handler, 0, 5)
+	if api.options.HttpLatency > 0 && martini.Env != martini.Prod {
+		result = append(result, api.SleepHandler())
+	}
 	for _, handler := range handlers {
 		if handler != nil {
 			result = append(result, handler)
@@ -135,7 +123,7 @@ func (api *apiServer) indexHandlers(sliceType reflect.Type, options RouteOptions
 
 // postHandlers returns a handler function list for posting a single item to the DB
 func (api *apiServer) postHandlers(itemType reflect.Type, options RouteOptions) []martini.Handler {
-	return handlerList(
+	return api.handlerList(
 		bindRequestHandler("POST"),
 		api.getAuthenticateHandler(options.Authenticate),
 		options.Authorize,
@@ -170,7 +158,7 @@ func (api *apiServer) patchHandlers(itemType reflect.Type, options RouteOptions)
 		a.DB().Save(req.Uploaded)
 		req.Result = req.Uploaded
 	}
-	return handlerList(
+	return api.handlerList(
 		bindRequestHandler("PATCH"),
 		api.getAuthenticateHandler(options.Authenticate),
 		options.Authorize,
@@ -221,7 +209,7 @@ func jsonParseBody(itemType reflect.Type) martini.Handler {
 		req.Uploaded = item
 		switch req.Uploaded.(type) {
 		case NeedsValidation:
-			err := req.Uploaded.(NeedsValidation).ValidateUpload(req, params)
+			err := req.Uploaded.(NeedsValidation).ValidateUpload()
 			if err != nil && len(err) != 0 {
 				log.WithFields(log.Fields{"error": err}).Warn("Validation error")
 				j, _ := json.Marshal(err)
@@ -249,5 +237,13 @@ func doCreate(itemType reflect.Type) martini.Handler {
 			w.WriteHeader(422)
 		}
 		req.Result = req.Uploaded
+	}
+}
+
+// SleepHandler sleeps for millisecs to emulate latency during development.
+// Include this with the HTTPLatency option to api.Options
+func (api *apiServer) SleepHandler() martini.Handler {
+	return func() {
+		time.Sleep(time.Duration(api.options.HttpLatency) * time.Millisecond)
 	}
 }

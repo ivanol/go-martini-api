@@ -10,9 +10,12 @@ import (
 	"github.com/go-martini/martini"
 )
 
+// Objects that implement LoginModel can be used to login. We don't use any locally defined types so
+// that any package implementing this is not directly dependent on ourselves.
 type LoginModel interface {
-	CheckLoginDetails(j *JsonBody, api API) (uint, error)
-	GetById(id uint, api API) (LoginModel, error)
+	CheckLoginDetails(json *map[string]interface{}) (uint, error)
+	//GetById returns an interface (which should be of type LoginModel) by it's id
+	GetById(id uint) (interface{}, error)
 }
 
 // getLoginHandler() returns the handler function to respond to the login request.
@@ -20,7 +23,8 @@ type LoginModel interface {
 // On success we create a JWT web token using user_id
 func (api *apiServer) getLoginHandler() func(*JsonBody, http.ResponseWriter, martini.Context) []byte {
 	return func(j *JsonBody, w http.ResponseWriter, c martini.Context) []byte {
-		user_id, err := api.loginModel.CheckLoginDetails(j, api)
+		msi := map[string]interface{}(*j)
+		user_id, err := api.loginModel.CheckLoginDetails(&msi)
 		if err != nil {
 			log.Println("Login failed", err)
 			w.WriteHeader(403)
@@ -46,13 +50,14 @@ func (api *apiServer) IsAuthenticated() interface{} {
 			return []byte(api.options.JwtKey), nil
 		})
 		if token != nil && token.Valid {
-			user, err := api.loginModel.GetById(uint(token.Claims["id"].(float64)), api)
+			guser, err := api.loginModel.GetById(uint(token.Claims["id"].(float64)))
 			if err != nil {
 				w.WriteHeader(401)
 				fmt.Fprintf(w, "Unauthorized")
 				log.WithFields(log.Fields{"id": token.Claims["id"]}).Warn("Cannot find logged in user")
 				return
 			}
+			user := guser.(LoginModel)
 			c.Map(user)
 		} else {
 			log.WithFields(log.Fields{"error": tokerr}).Warn("Auth: JWT token did not validate")

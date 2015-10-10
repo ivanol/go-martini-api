@@ -11,9 +11,9 @@ import (
 )
 
 // Add CheckLoginDetails so User implements LoginModel
-func (_ *User) CheckLoginDetails(j *JsonBody, a API) (uint, error) {
+func (_ *User) CheckLoginDetails(json *map[string]interface{}) (uint, error) {
 	user := User{}
-	if a.DB().Where("name = ? AND password = ?", (*j)["name"], (*j)["password"]).Find(&user).RecordNotFound() {
+	if getTestDb().Where("name = ? AND password = ?", (*json)["name"], (*json)["password"]).Find(&user).RecordNotFound() {
 		return 0, errors.New("Not authenticated")
 	} else {
 		return user.ID, nil
@@ -24,9 +24,9 @@ func (_ *User) CheckLoginDetails(j *JsonBody, a API) (uint, error) {
 var disableGetUserById bool
 
 // Add GetById so User implements LoginModel
-func (_ *User) GetById(id uint, a API) (LoginModel, error) {
+func (_ *User) GetById(id uint) (interface{}, error) {
 	user := User{}
-	if disableGetUserById || a.DB().Where("id = ?", id).Find(&user).RecordNotFound() {
+	if disableGetUserById || getTestDb().Where("id = ?", id).Find(&user).RecordNotFound() {
 		return &user, errors.New("User not found")
 	}
 	return &user, nil

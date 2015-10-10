@@ -7,48 +7,6 @@ import (
 	"testing"
 )
 
-// Check append authentication handler
-func TestAppendAuth(t *testing.T) {
-	a := getTestApi()
-	api := a.(*apiServer)
-	handlers := make([]martini.Handler, 0)
-
-	handlers = api.appendAuthenticateHandler(handlers, nil)
-	if len(handlers) != 0 {
-		t.Errorf("Added a nil handler")
-		return
-	}
-
-	handlers = api.appendAuthenticateHandler(handlers, false)
-	if len(handlers) != 0 {
-		t.Errorf("Added a false handler")
-		return
-	}
-
-	handlers = api.appendAuthenticateHandler(handlers, true)
-	if len(handlers) != 1 {
-		t.Errorf("Failed to add a true handler")
-		return
-	}
-	switch handlers[0].(type) {
-	case bool:
-		t.Errorf("Failed bool value as the handler")
-	default:
-		// success
-	}
-
-	handlers = make([]martini.Handler, 0)
-	handlers = api.appendAuthenticateHandler(handlers, func() string { return "YES" })
-	if len(handlers) != 1 {
-		t.Errorf("Failed to add a handler")
-		return
-	}
-	f := handlers[0].(func() string)
-	if f() != "YES" {
-		t.Errorf("Didn't add function handler")
-	}
-}
-
 // Setup a route handler which returns a record of the handlers used!
 type testRec struct {
 	handlers string

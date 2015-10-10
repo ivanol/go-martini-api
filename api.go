@@ -16,6 +16,10 @@ type Options struct {
 	Martini   *martini.ClassicMartini
 	Db        *gorm.DB
 	UriPrefix string // defaults to api. ModelName will be found by default at /UriModelName/model_names
+
+	// For debugging. Adds this number of milliseconds latency to every api request so you can check your
+	// app remains responsive. Will be ignored if martini.Env==martini.Prod (ie. in production environment)
+	HttpLatency int
 }
 
 // RouteOptions can be applied to a single route or to a model. Pass them as
@@ -71,15 +75,15 @@ type API interface {
 
 	// Returns a middleware handler for authentication.
 	IsAuthenticated() interface{}
+
+	// For debugging - FIXME it's ugly exposing this
+	SleepHandler() martini.Handler
 }
 
 // Any model implementing the NeedsValidation interface will have this called
-// on upload (ie. PATCH, and POST requests). Note that api.Request.DB is a DB object
-// that may have been scoped earlier in the handler chain. Any checks on other
-// models should probably use the original DB object at api.Request.API.DB()
-type ValidationErrors map[string]string
+// on upload (ie. PATCH, and POST requests).
 type NeedsValidation interface {
-	ValidateUpload(*Request, martini.Params) ValidationErrors
+	ValidateUpload() map[string]string
 }
 
 type apiServer struct {

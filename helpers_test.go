@@ -48,7 +48,7 @@ type VerifiedWidget struct {
 	MustBeHelloWorld string `json:"must_be_hello_world"`
 }
 
-func (vw *VerifiedWidget) ValidateUpload(*Request, martini.Params) ValidationErrors {
+func (vw *VerifiedWidget) ValidateUpload() map[string]string {
 	if vw.MustBeHelloWorld == "Hello World!!" {
 		return nil
 	}
