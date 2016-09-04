@@ -1,8 +1,10 @@
 package api
 
 import (
-	log "github.com/Sirupsen/logrus"
 	"reflect"
+	"time"
+
+	log "github.com/Sirupsen/logrus"
 
 	"github.com/go-martini/martini"
 	"github.com/jinzhu/gorm"
@@ -13,6 +15,7 @@ import (
 // Global Options for an API instance.
 type Options struct {
 	JwtKey    string
+	JwtExpiry time.Duration // Duration of expiry time in new jwt keys. Defaults to 1 hour
 	Martini   *martini.ClassicMartini
 	Db        *gorm.DB
 	UriPrefix string // defaults to api. ModelName will be found by default at /UriModelName/model_names
@@ -72,6 +75,9 @@ type API interface {
 	// POST route to this model, with the LoginModel's AuthenticateJson method
 	// called in the handler to determine if authentication passes.
 	SetAuth(model LoginModel, path string)
+
+	// Get a signed JWT token for user id.
+	GetJWTToken(id uint) string
 
 	// Returns a middleware handler for authentication.
 	IsAuthenticated() interface{}

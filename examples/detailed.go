@@ -12,6 +12,8 @@ import (
 	"github.com/ivanol/go-martini-api"
 )
 
+var GORMDB *gorm.DB
+
 // User contains our table of users
 type User struct {
 	ID       uint   `gorm:"primary_key" json:"id"`
@@ -21,10 +23,10 @@ type User struct {
 }
 
 // Check the login details.
-func (_ *User) CheckLoginDetails(j *api.JsonBody, a api.API) (uint, error) {
+func (_ *User) CheckLoginDetails(j *map[string]interface{}) (uint, error) {
 	user := User{}
 	fmt.Printf("Checking login details\n")
-	if a.DB().Where("name = ? AND password = ?", (*j)["name"], (*j)["password"]).Find(&user).RecordNotFound() {
+	if GORMDB.Where("name = ? AND password = ?", (*j)["name"], (*j)["password"]).Find(&user).RecordNotFound() {
 		fmt.Printf("Not found\n")
 		return 0, errors.New("Not authenticated")
 	} else {
@@ -35,9 +37,9 @@ func (_ *User) CheckLoginDetails(j *api.JsonBody, a api.API) (uint, error) {
 
 // Return user given an ID. This is the second function to make *User fulfill
 // the LoginModel interface
-func (_ *User) GetById(id uint, a api.API) (api.LoginModel, error) {
+func (_ *User) GetById(id uint) (interface{}, error) {
 	user := User{}
-	if a.DB().Where("id = ?", id).Find(&user).RecordNotFound() {
+	if GORMDB.Where("id = ?", id).Find(&user).RecordNotFound() {
 		return &user, errors.New("User not found")
 	}
 	return &user, nil
@@ -76,6 +78,7 @@ func seedDb(db *gorm.DB) {
 func main() {
 	// Create a DB with the test table and seed data
 	db, _ := gorm.Open("sqlite3", "./api-example.db")
+	GORMDB = &db
 	seedDb(&db)
 
 	// Create an API server. We need to supply JwtKey if we're doing authentication.

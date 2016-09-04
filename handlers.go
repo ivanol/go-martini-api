@@ -153,6 +153,16 @@ func (api *apiServer) patchHandlers(itemType reflect.Type, options RouteOptions)
 			return
 		}
 		req.Uploaded = req.Result
+		switch req.Uploaded.(type) {
+		case NeedsValidation:
+			err := req.Uploaded.(NeedsValidation).ValidateUpload()
+			if err != nil && len(err) != 0 {
+				log.WithFields(log.Fields{"error": err}).Warn("Validation error")
+				j, _ := json.Marshal(err)
+				w.WriteHeader(422)
+				w.Write([]byte(fmt.Sprintf(`{"errors":%v}`, string(j))))
+			}
+		}
 	}
 	patchHandler := func(params martini.Params, req *Request, w http.ResponseWriter, a API) {
 		a.DB().Save(req.Uploaded)

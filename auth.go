@@ -31,7 +31,7 @@ func (api *apiServer) getLoginHandler() func(*JsonBody, http.ResponseWriter, mar
 			return []byte("Login failed")
 		} else {
 			log.Println("Logged in user", user_id)
-			token := getJWTToken(user_id, api.options.JwtKey)
+			token := api.GetJWTToken(user_id)
 			return []byte("{\"token\":\"" + token + "\"}")
 		}
 	}
@@ -67,15 +67,23 @@ func (api *apiServer) IsAuthenticated() interface{} {
 	}
 }
 
-//Create a JWT token with id=id and expiring in 1 hour
-func getJWTToken(id uint, key string) string {
+//Create a JWT token with id=id and expiring in timeout.
+func (api *apiServer) GetJWTToken(id uint) string {
+	timeout := api.options.JwtExpiry
+	if timeout == 0 {
+		timeout = time.Hour
+	}
+	key := api.options.JwtKey
 	token := jwt.New(jwt.SigningMethodHS256)
 	// Set some claims
 	token.Claims["id"] = id
-	token.Claims["exp"] = time.Now().Add(time.Hour * 1).Unix()
+	token.Claims["exp"] = time.Now().Add(timeout).Unix()
 	log.WithFields(log.Fields{"expiry": token.Claims["exp"], "id": id}).Info("Signing token.")
 	// Sign and get the complete encoded token as a string
 	tokenString, err := token.SignedString([]byte(key))
 	log.Printf("Token: %s, error %v", tokenString, err)
+	if err != nil {
+		return ""
+	}
 	return tokenString
 }
